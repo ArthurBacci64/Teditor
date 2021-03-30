@@ -10,6 +10,13 @@ void savefile(void) {
         message(buf);
         return;
     }
+
+    if (config.insert_newline && lines[num_lines - 1].length > 0) {
+        lines = realloc(lines, (num_lines + 1) * sizeof(struct LINE));
+        memmove(&lines[num_lines + 2], &lines[num_lines + 1], sizeof(struct LINE));
+        new_line(num_lines, lines[num_lines - 1].length);
+        num_lines++;
+    }
     
     for (unsigned int i = 0; i < num_lines; i++) {
         for (unsigned int j = 0; j < lines[i].length; j++) {
@@ -25,8 +32,6 @@ void savefile(void) {
                 fputc('\r', fpw);
         }
     }
-    
-
     fclose(fpw);
 }
 
@@ -43,12 +48,10 @@ void read_lines(void) {
         lines[0].ident = 0;
         
         syntaxHighlight();
-
         return;
     }
 
     detect_linebreak();
-
     char lineend = config.line_break_type == 0 ? '\n' : '\r';
 
     num_lines = 0;

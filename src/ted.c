@@ -24,7 +24,7 @@ void setcolor(int c) {
 unsigned int last_cursor_x = 0;
 
 struct CFG config = {
-    4, 0, 0, 1, 1,
+    4, 0, 0, 1, 1, 1, 1,
     &default_syntax, 0, NULL
 };
 

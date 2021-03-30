@@ -16,6 +16,10 @@ Keybings
         │   ├── Also changes the size that the tab is displayed
         │   └── Default: 4
         │
+        ├───┬─ insert-newline
+        │   ├── Inserts a final newline when saving the file.
+        │   └── Default: 1/TRUE
+        │
         ├───┬─ linebreak
         │   ├── Changes the type of linebreak between LF (Linux, Mac), CRLF (Windows) and CR.
         │   └── Default: depends on the file

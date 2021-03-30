@@ -108,7 +108,6 @@ void show_lines(void) {
             if (bg)
                 setcolor(COLOR_PAIR(2));
             
-            
             size++;
         }
     }

@@ -9,12 +9,29 @@ void expandLine(unsigned int at, int x) {
     }
 }
 
+void new_line(unsigned int at, int x) {
+    lines[at].len = READ_BLOCKSIZE;
+    lines[at].data = malloc(lines[at].len * sizeof(uchar32_t));
+    lines[at].color = malloc(lines[at].len * sizeof(unsigned char));
+    lines[at].length = 0;
+    
+    expandLine(at, lines[at - 1].length - x + 1);
+    memcpy(lines[at].data, &lines[at - 1].data[x], (lines[at - 1].length - x) * sizeof(uchar32_t));
+    
+    lines[at].length += lines[at - 1].length - x;
+    lines[at].data[lines[at].length] = '\0';
+
+    lines[at - 1].length = x;
+    lines[at - 1].data[lines[at - 1].length] = '\0';
+
+    calculate_len_line_number();
+}
+
 void process_keypress(int c) {
     switch (c) {
     case KEY_UP:
     case ctrl('p'):
         cursor.y -= cursor.y > 0;
-
         cursor.x = last_cursor_x;
         
         cursor_in_valid_position();
@@ -22,7 +39,6 @@ void process_keypress(int c) {
     case KEY_DOWN:
     case ctrl('n'):
         cursor.y++;
-
         cursor.x = last_cursor_x;
         
         cursor_in_valid_position();
@@ -109,10 +125,7 @@ void process_keypress(int c) {
         if (d)
             openFile(d, 1);
         break;
-    }
-    }
-    
-    if (c == CTRL_KEY_LEFT) {
+    } case CTRL_KEY_LEFT: {
         char passed_spaces = 0;
         while (cx > 0) {
             process_keypress(KEY_LEFT);
@@ -123,40 +136,17 @@ void process_keypress(int c) {
                 break;
             }
         }
-    } else if (c == CTRL_KEY_RIGHT) {
+        break;
+    }
+    case CTRL_KEY_RIGHT: {
         char passed_spaces = 0;
         while (lines[cy].data[cx] != '\0' && !(strchr(config.current_syntax->word_separators, lines[cy].data[cx]) && passed_spaces)) {
             if (!strchr(config.current_syntax->word_separators, lines[cy].data[cx]))
                 passed_spaces = 1;
             process_keypress(KEY_RIGHT);
         }
-    } else if (isprint(c) || c == '\t' || (c >= 0xC0 && c <= 0xDF) || (c >= 0xE0 && c <= 0xEF) || (c >= 0xF0 && c <= 0xF7)) {
-        if (read_only) {
-            message("Can't modify read only buffer.");
-            return;
-        }
-
-        if (c == ' ' && cx <= lines[cy].ident)
-            lines[cy].ident++;
-
-        expandLine(cy, 1);
-
-        memmove(&lines[cy].data[cx + 1], &lines[cy].data[cx], (lines[cy].length - cx) * sizeof(uchar32_t));
-
-        lines[cy].data[cx] = c;
-        
-        if ((c >= 0xC0 && c <= 0xDF) || (c >= 0xE0 && c <= 0xEF) || (c >= 0xF0 && c <= 0xF7))
-            lines[cy].data[cx] += getch() << 8;
-        if ((c >= 0xE0 && c <= 0xEF) || (c >= 0xF0 && c <= 0xF7))
-            lines[cy].data[cx] += getch() << 16;
-        if (c >= 0xF0 && c <= 0xF7)
-            lines[cy].data[cx] += getch() << 24;
-        
-        lines[cy].data[++lines[cy].length] = '\0';
-        syntaxHighlight();
-        process_keypress(KEY_RIGHT);
-
-    } else if (c == KEY_BACKSPACE || c == KEY_DC || c == 127) {
+        break;
+    } case KEY_BACKSPACE: case KEY_DC: case 127: {
         if (read_only) {
             message("Can't modify read only buffer.");
             return;
@@ -173,13 +163,13 @@ void process_keypress(int c) {
             struct LINE del_line = lines[cy];
 
             memmove(&lines[cy], &lines[cy + 1], (num_lines - cy - 1) * sizeof(struct LINE));
-            
+
             lines = realloc(lines, --num_lines * sizeof(struct LINE));
 
             process_keypress(KEY_UP);
 
             cursor.x = lines[cy].length;
-            
+
             process_keypress(KEY_RIGHT);
 
             expandLine(cy, del_line.length);
@@ -191,7 +181,7 @@ void process_keypress(int c) {
 
             free(del_line.data);
             free(del_line.color);
-            
+
             calculate_len_line_number();
         }
 
@@ -201,8 +191,8 @@ void process_keypress(int c) {
             lines[cy].ident++;
         }
         syntaxHighlight();
-
-    } else if (c == '\n' || c == KEY_ENTER || c == '\r') {
+        break;
+    } case '\n': case KEY_ENTER: case '\r': {
         if (read_only) {
             message("Can't modify read only buffer.");
             return;
@@ -216,25 +206,7 @@ void process_keypress(int c) {
         cursor.x = 0;
         last_cursor_x = 0;
         process_keypress(KEY_DOWN);
-
-        lines[cy].len = READ_BLOCKSIZE;
-        lines[cy].data = malloc(lines[cy].len * sizeof(uchar32_t));
-        lines[cy].color = malloc(lines[cy].len * sizeof(unsigned char));
-        lines[cy].length = 0;
-        
-        expandLine(cy, lines[cy - 1].length - lcx + 1);
-        
-        memcpy(lines[cy].data, &lines[cy - 1].data[lcx], (lines[cy - 1].length - lcx) * sizeof(uchar32_t));
-        
-        lines[cy].length += lines[cy - 1].length - lcx;
-        
-        lines[cy].data[lines[cy].length] = '\0';
-
-        lines[cy - 1].length = lcx;
-
-        lines[cy - 1].data[lines[cy - 1].length] = '\0';
-
-        calculate_len_line_number();
+        new_line(cy, lcx);
 
         if (config.autotab == 1) {
             const unsigned int ident = lines[cy - 1].ident;
@@ -254,5 +226,42 @@ void process_keypress(int c) {
             lines[cy].ident = 0;
 
         syntaxHighlight();
+        break;
+    }
+    }
+
+    if (isprint(c) || c == '\t' || (c >= 0xC0 && c <= 0xDF) || (c >= 0xE0 && c <= 0xEF) || (c >= 0xF0 && c <= 0xF7)) {
+        if (read_only) {
+            message("Can't modify read only buffer.");
+            return;
+        }
+
+        if (c == ' ' && cx <= lines[cy].ident)
+            lines[cy].ident++;
+
+        if (config.automatch && cx == lines[cy].length) {
+            char *match = strchr(config.current_syntax->match[0], c);
+            if (match != NULL) {
+                process_keypress(config.current_syntax->match[1][match - config.current_syntax->match[0]]);
+                --cx; // decrement cx to put the first character in the right place
+            }
+        }
+
+        expandLine(cy, 1);
+        memmove(&lines[cy].data[cx + 1], &lines[cy].data[cx], (lines[cy].length - cx) * sizeof(uchar32_t));
+
+        lines[cy].data[cx] = c;
+
+        if ((c >= 0xC0 && c <= 0xDF) || (c >= 0xE0 && c <= 0xEF) || (c >= 0xF0 && c <= 0xF7))
+            lines[cy].data[cx] += getch() << 8;
+        if ((c >= 0xE0 && c <= 0xEF) || (c >= 0xF0 && c <= 0xF7))
+            lines[cy].data[cx] += getch() << 16;
+        if (c >= 0xF0 && c <= 0xF7)
+            lines[cy].data[cx] += getch() << 24;
+
+        lines[cy].data[++lines[cy].length] = '\0';
+        syntaxHighlight();
+        process_keypress(KEY_RIGHT);
+
     }
 }

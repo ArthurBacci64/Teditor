@@ -3,7 +3,6 @@
 char *home_path(const char *path) {
     char *ret = malloc(1000 * sizeof *ret);
     snprintf(ret, 1000, "%s/%s", getenv("HOME"), path);
-    
     return ret;
 }
 
@@ -30,10 +29,8 @@ char *split_spaces(char *str, char **save) {
 
     *end = '\0';
     *save = end + 1;
-    // skip spaces
-    while (isspace(**save)) (*save)++;
+    while (isspace(**save)) (*save)++;// skip spaces
     return str;
-
 }
 
 char **split_str(const char *str, int *num_str) {
@@ -42,7 +39,6 @@ char **split_str(const char *str, int *num_str) {
     strcpy(strcp, str);
 
     while (*strcp == ' ') strcp++; // Removes trailing spaces
-
     *num_str = 0;
     char **strs = NULL;
 
@@ -67,12 +63,22 @@ char **split_str(const char *str, int *num_str) {
     }
 
     free(origstrcp);
-
     return strs;
 }
 
 void calculate_len_line_number(void) {
-    char tmp[10];
-    len_line_number = snprintf(tmp, 10, "%d ", num_lines + 1);
+    int num = num_lines + 1, i = 1;
+    do {
+        num /= 10;// base 10
+        ++i;
+    } while (num);
+    len_line_number = i;
 }
 
+bool uchar32_cmp(const uchar32_t *s1, const char *s2, unsigned int stringlen) {
+    for (unsigned int j = 0; j < stringlen; j++)
+        if ((uchar32_t)s2[j] != s1[j])
+            return 1; //Different character found
+
+    return 0; //All characters equal
+}
