@@ -12,10 +12,14 @@ void savefile(void) {
     }
 
     if (config.insert_newline && lines[num_lines - 1].length > 0) {
-        lines = realloc(lines, (num_lines + 1) * sizeof(struct LINE));
-        memmove(&lines[num_lines + 2], &lines[num_lines + 1], sizeof(struct LINE));
-        new_line(num_lines, lines[num_lines - 1].length);
-        num_lines++;
+        lines = realloc(lines, ++num_lines * sizeof(*lines));
+        const unsigned int ln = num_lines - 1;
+        lines[ln].len = READ_BLOCKSIZE;
+        lines[ln].data = malloc(lines[ln].len * sizeof(*lines[ln].data));
+        lines[ln].color = malloc(lines[ln].len * sizeof(*lines[ln].data));
+        lines[ln].length = 0;
+        lines[ln].ident = 0;
+        *lines[ln].data = '\0';
     }
     
     for (unsigned int i = 0; i < num_lines; i++) {
@@ -33,6 +37,8 @@ void savefile(void) {
         }
     }
     fclose(fpw);
+
+    config.selected_buf.modified = 0;
 }
 
 void read_lines(void) {
@@ -46,8 +52,6 @@ void read_lines(void) {
         lines[0].length = 0;
         lines[0].data[0] = '\0';
         lines[0].ident = 0;
-        
-        syntaxHighlight();
         return;
     }
 
@@ -145,18 +149,16 @@ void openFile(char *fname, bool needs_to_free) {
         fclose(fp);
 
     calculate_len_line_number();
-    
     detect_read_only(fname);
 }
 
 void detect_read_only(char *fname) {
     struct stat st;
     if (stat(fname, &st) == 0) {
-        read_only = !(
-            (st.st_mode & S_IWOTH) // all user write permission
-            || (getuid() == st.st_uid && (st.st_mode & S_IWUSR)) // owner write permission
-            || (getgid() == st.st_gid && (st.st_mode & S_IWGRP)) // group write permission
-        );
-    } else
-        read_only = errno == EACCES; // if stat fails and errno is not EACCES, read_only will not be set
+        config.selected_buf.can_write = (st.st_mode & S_IWOTH) || // all user write permission
+            (getuid() == st.st_uid && (st.st_mode & S_IWUSR)) || // owner write permission
+            (getgid() == st.st_gid && (st.st_mode & S_IWGRP));  // group write permission
+    } else // if stat fails and errno is not EACCES, can_write will be true
+        config.selected_buf.can_write = errno != EACCES;
+    config.selected_buf.read_only = !config.selected_buf.can_write;
 }

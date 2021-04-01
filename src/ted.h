@@ -42,6 +42,8 @@ void setcolor(int c);
 
 // config_dialog.c
 void config_dialog(void);
+void run_command(char **words, int words_len);
+void parse_command(char *command);
 
 // open_and_save.c
 void savefile(void);
@@ -81,10 +83,16 @@ char *home_path(const char *path);
 char *split_spaces(char *str, char **save);
 char **split_str(const char *str, int *num_str);
 void calculate_len_line_number(void);
-bool uchar32_cmp(const uchar32_t *s1, const char *s2, unsigned int stringlen);
+int uchar32_cmp(const uchar32_t *s1, const char *s2, unsigned int stringlen);
+int uchar32_sub(const uchar32_t *hs, const char *sub, unsigned int hslen, unsigned int sublen);
 
 // extension.c
 bool detect_extension(char *fname);
+
+// modify.c
+bool modify(void);
+bool add_char(int x, int y, uchar32_t c);
+bool remove_char(int x, int y);
 
 struct KWD {
     const char *string;
@@ -107,11 +115,18 @@ struct SHD {
     unsigned char syntax_comment_color;
     unsigned char match_color;
     unsigned char number_color;
+    unsigned char number_prefix_color;
     const char *stringchars;
     const char *singleline_comment;
     const char *multiline_comment[2];
     const char *match[2];
     const char *number_prefix[3]; // 0: hexadecimal 1: octal 2: binary
+};
+
+struct BUFFER {
+    bool modified;
+    bool read_only;
+    bool can_write;
 };
 
 struct CFG {
@@ -125,7 +140,9 @@ struct CFG {
     struct SHD *current_syntax;
     unsigned int syntax_len;
     struct SHD **syntaxes;
+    struct BUFFER selected_buf;
 };
+
 
 /*
 ffffbbbb
@@ -166,7 +183,6 @@ extern struct TEXT_SCROLL text_scroll;
 extern unsigned int last_cursor_x;
 extern bool colors_on;
 extern bool needs_to_free_filename;
-extern bool read_only;
 extern char *menu_message;
 extern struct SHD default_syntax;
 

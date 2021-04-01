@@ -1,4 +1,5 @@
 #include "ted.h"
+
 #include "syntax.h"
 
 struct LINE *lines = NULL;
@@ -14,7 +15,6 @@ char *menu_message = "";
 
 bool colors_on = 0;
 bool needs_to_free_filename;
-bool read_only = 0;
 
 void setcolor(int c) {
     if (colors_on)
@@ -25,7 +25,8 @@ unsigned int last_cursor_x = 0;
 
 struct CFG config = {
     4, 0, 0, 1, 1, 1, 1,
-    &default_syntax, 0, NULL
+    &default_syntax, 0, NULL,
+    {0, 0, 1},
 };
 
 int main(int argc, char **argv) {
@@ -48,11 +49,12 @@ int main(int argc, char **argv) {
         if (*argv[1] == '/') 
             filename = argv[1];
         else {
-            char *fname = malloc(1000 * sizeof *filename);
-            getcwd(fname, 1000);
             filename = malloc(1000 * sizeof *filename);
-            snprintf(filename, 1000, "%s/%s", fname, argv[1]);
-            free(fname);
+            *filename = '\0';
+
+            if (getcwd(filename, 1000) != NULL) strncat(filename, "/", 1000);
+            else strncat(filename, "./", 1000); //try relative path
+            strncat(filename, argv[1], 1000);
         }
         needs_to_free_filename = *argv[1] != '/';
     }
@@ -84,14 +86,13 @@ int main(int argc, char **argv) {
     }
 
     config.lines = LINES - 1;
+    int last_LINES = LINES;
+    int last_COLS = COLS;
 
     fp = fopen(filename, "r");
     read_lines();
     if (fp) fclose(fp);
     detect_read_only(filename);
-    
-    int last_LINES = LINES;
-    int last_COLS = COLS;
     
     int c;
     while (1) {
@@ -108,15 +109,22 @@ int main(int argc, char **argv) {
 
         c = getch();
 
-        if (c == ctrl('c'))
-            break;
-
+        if (c == ctrl('c')) {
+            if (config.selected_buf.modified) {
+                char *prt = prompt_hints("Unsaved changes: ", "", "'exit' to exit", NULL);
+                if (prt && !strcmp("exit", prt)) {
+                    free(prt);
+                    break;
+                }
+                free(prt);
+            } else
+                break;
+        }
         process_keypress(c);
-        syntaxHighlight();
     }
 
+    // TODO: add free_everything function
     free_lines();
-
     if (needs_to_free_filename == 1)
         free(filename);
 

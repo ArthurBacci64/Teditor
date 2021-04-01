@@ -22,7 +22,7 @@ bool detect_extension(char *fname) {
         }
     }
     
-  END:
+END:
     config.current_syntax = &default_syntax;
     return false; // Not found
 }

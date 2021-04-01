@@ -68,7 +68,7 @@ static void save_as(char **words, unsigned int words_len) {
         needs_to_free_filename = 1;
         detect_read_only(filename);
 
-        if (read_only) message("Can't save as a read-only file.");
+        if (config.selected_buf.read_only) message("Can't save as a read-only file.");
         else savefile();
     }
 }
@@ -76,12 +76,12 @@ static void save_as(char **words, unsigned int words_len) {
 static void manual(char **words, unsigned int words_len) {
     if (words_len == 0) {
         openFile(home_path(".config/ted/docs/help.txt"), 1);
-        read_only = 1;
+        config.selected_buf.read_only = 1;
     } else if (words_len == 1) {
         char fname[1000];
         snprintf(fname, 1000, ".config/ted/docs/%s.txt", words[0]);
         openFile(home_path(fname), 1);
-        read_only = 1;
+        config.selected_buf.read_only = 1;
     }
 }
 
@@ -95,6 +95,43 @@ static void syntax(char **words, unsigned int words_len) {
             config.current_syntax = &default_syntax;
             
         free(str);
+    } else
+        config.current_syntax = &default_syntax;
+    syntaxHighlight();
+}
+
+static void read_only_cmd(char **words, unsigned int words_len) {
+    if (words_len == 1) {
+        if (!strncmp(words[0], "1", 1))
+            config.selected_buf.read_only = 1;
+        else if (!strncmp(words[0], "0", 1)) {
+            if (config.selected_buf.can_write)
+                config.selected_buf.read_only = 0;
+            else
+                message("Can't unlock buffer without write permission");
+        }
+    }
+}
+
+static void find(char **words, unsigned int words_len) {
+    int from_cur = 0;
+    if (words_len == 2 && !strcmp(words[0], "cursor"))
+        from_cur = 1;
+    if (words_len == 1 || words_len == 2) {
+        unsigned int len = strlen(words[words_len - 1]);
+        int index;
+        for (unsigned int at = from_cur ? cy : 0; at < num_lines && (at != num_lines); ++at) {
+            if (lines[at].length >= len &&
+                (index = uchar32_sub(from_cur && at == cy ? &lines[at].data[cx] : lines[at].data, words[words_len - 1], lines[at].length, len)) >= 0
+            ) {
+                cursor.y = at;
+                cursor.x = index + len + (from_cur && at == cy) * cx;
+                cursor_in_valid_position();
+                syntaxHighlight();
+                return;
+            }
+        }
+        message("Substring not found");
     }
 }
 
@@ -110,7 +147,10 @@ struct {
     {"automatch"        , automatch         },
     {"save-as"          , save_as           },
     {"manual"           , manual            },
-    {"syntax"           , syntax            }
+    {"syntax"           , syntax            },
+    {"read-only"        , read_only_cmd     },
+    {"find"             , find              },
+    {NULL, NULL}
 };
 
 struct HINTS hints[] = {
@@ -123,29 +163,39 @@ struct HINTS hints[] = {
     {"save-as"          , " <filename>"                         },
     {"manual"           , " <page (nothing for index)>"         },
     {"syntax"           , " <language (nothing for disabling)>" },
-    {NULL               , NULL                                  }
+    {"read-only"        , " {0, 1}"                             },
+    {"find"             , " {start, cursor} <substring>"        },
+    {NULL, NULL}
 };
 
+char *base_hint = "{tablen, linebreak, insert-newline, use-spaces, autotab, automatch, save-as, manual, syntax, read-only, find}";
+
 void config_dialog(void) {
-    char *base_hint = "{tablen, linebreak, insert-newline, use-spaces, autotab, automatch, save-as, manual, syntax}";
     char *command = prompt_hints("Enter command: ", "", base_hint, hints);
-    
+
+    parse_command(command);
+
+    free(command);
+}
+
+void parse_command(char *command) {
     if (!command)
         return;
 
     int words_len;
     char **words = split_str(command, &words_len);
 
-    const unsigned int fnslen = sizeof(fns) / sizeof(*fns);
-    for (unsigned int i = 0; i < fnslen; i++) {
-        if (strcmp(words[0], fns[i].name) == 0) {
-            fns[i].function(words + 1, words_len - 1);
-            break;
-        }
-    }
+    run_command(words, words_len);
 
-    free(command);
     for (int i = 0; i < words_len; i++)
         free(words[i]);
     free(words);
+}
+
+void run_command(char **words, int words_len) {
+    for (unsigned int i = 0; fns[i].name; i++) {
+        if (!strcmp(words[0], fns[i].name)) {
+            fns[i].function(words + 1, words_len - 1);
+        }
+    }
 }

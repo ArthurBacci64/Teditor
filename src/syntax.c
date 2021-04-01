@@ -58,7 +58,7 @@ static struct SHD c_syntax = {
     sizeof c_exts / sizeof *c_exts, c_exts,
     " \t~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?", // Characters that separates words
     sizeof c_kwd / sizeof *c_kwd, c_kwd, //Keywords
-    0x60, 0x50, 0x05, 0x30,
+    0x60, 0x50, 0x05, 0x20, 0x50,
     "\"\'", // Strings charaters
     "//", {"/*", "*/"}, // Comments
     {"{[(", "}])"},
@@ -135,7 +135,7 @@ static struct SHD cpp_syntax = {
     sizeof cpp_exts / sizeof *cpp_exts, cpp_exts,
     " \t~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?", // Characters that separates words
     sizeof cpp_kwd / sizeof *cpp_kwd, cpp_kwd, //Keywords
-    0x60, 0x50, 0x05, 0x30,
+    0x60, 0x50, 0x05, 0x20, 0x50,
     "\"\'", // Strings charaters
     "//", {"/*", "*/"}, // Comments
     {"{[(", "}])"},
@@ -230,7 +230,7 @@ static struct SHD python_syntax = {
     sizeof python_exts / sizeof *python_exts, python_exts,
     " \t~!@#$%^&*()-=+[{]}\\|;:'\",.<>/", // Characters that separates words
     sizeof python_kwd / sizeof *python_kwd, python_kwd, //Keywords
-    0x40, 0x50, 0x05, 0x30,
+    0x40, 0x50, 0x05, 0x20, 0x50,
     "\"\'`", // Strings charaters
     "#", {"", ""}, // Comments
     {"{[(", "}])"},
@@ -287,7 +287,7 @@ static struct SHD sh_syntax = {
     sizeof sh_exts / sizeof *sh_exts, sh_exts,
     " \t~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?", // Characters that separates words
     sizeof sh_kwd / sizeof *sh_kwd, sh_kwd, //Keywords
-    0x40, 0x50, 0x05, 0x30,
+    0x40, 0x50, 0x05, 0x20, 0,
     "\"\'`", // Strings charaters
     "#", {"", ""}, // Comments
     {"{[(", "}])"},
@@ -303,7 +303,7 @@ struct SHD default_syntax = {
     0, NULL,
     " \t~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?",
     0, NULL,
-    0, 0, 0, 0,
+    0, 0, 0, 0, 0,
     "",
     "", {"", ""},
     {"", ""},

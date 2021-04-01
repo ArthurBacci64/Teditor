@@ -1,8 +1,13 @@
 #include "ted.h"
 
 void syntaxHighlight(void) {
+    if (config.current_syntax == &default_syntax) {// just reset color to all visible lines
+        for (unsigned int at = text_scroll.y; (at < text_scroll.y + config.lines) && (at != num_lines); ++at)
+            memset(lines[at].color, 0, (lines[at].length + 1) * sizeof(*lines[at].color));
+        return;
+    }
+
     bool multi_line_comment = 0;
-    bool comment = 0;
     bool backslash = 0;
     char string = '\0';
     unsigned int waiting_to_close = 0;
@@ -15,15 +20,15 @@ void syntaxHighlight(void) {
     unsigned int octprefixlen = strlen(config.current_syntax->number_prefix[1]);
     unsigned int binprefixlen = strlen(config.current_syntax->number_prefix[2]);
 
-    const unsigned int sytnax_start = *config.current_syntax->stringchars || (mlinecommentstart && mlinecommentend) ? 0 : text_scroll.y;
-    const unsigned int sytnax_end = text_scroll.y + config.lines;
+    unsigned int syntax_start = strlen(config.current_syntax->stringchars) || mlinecommentstart || mlinecommentend ? 0 : text_scroll.y;
+    unsigned int syntax_end = text_scroll.y + config.lines;
 
-    for (unsigned int at = sytnax_start; at < sytnax_end && at != num_lines; ++at) {
+    for (unsigned int at = syntax_start; (at < syntax_end) && (at != num_lines); ++at) {
+        bool comment = 0;
         memset(lines[at].color, 0, (lines[at].length + 1) * sizeof(*lines[at].color));
-
         for (unsigned int i = 0; i <= lines[at].length; i++) {
             if (lines[at].data[i] == '\\') {
-                lines[at].color[i] = string ? config.current_syntax->syntax_string_color : 0x0;
+                lines[at].color[i] = string ? config.current_syntax->syntax_string_color : 0;
                 backslash = !backslash;
                 continue;
             }
@@ -105,28 +110,32 @@ void syntaxHighlight(void) {
             }
 
             if (i == 0 || strchr(config.current_syntax->word_separators, lines[at].data[i - 1])) {
-                unsigned int numlen = 0;
+                unsigned int numlen = 0, prefixlen = 0;
                 char *numbers = "0123456789";
 
-                if (hexprefixlen != 0 && lines[at].length - i > hexprefixlen
+                if (hexprefixlen != 0 && lines[at].length - i >= hexprefixlen
                     && !uchar32_cmp(&lines[at].data[i], config.current_syntax->number_prefix[0], hexprefixlen)) {
-                    numlen += hexprefixlen;
+                    prefixlen = hexprefixlen;
                     numbers = "0123456789aAbBcCdDeEfF";
-                } else if (octprefixlen != 0 && lines[at].length - i > octprefixlen
+                } else if (octprefixlen != 0 && lines[at].length - i >= octprefixlen
                     && !uchar32_cmp(&lines[at].data[i], config.current_syntax->number_prefix[1], octprefixlen)) {
-                    numlen += octprefixlen;
+                    prefixlen = octprefixlen;
                     numbers = "01234567";
-                } else if (binprefixlen != 0 && lines[at].length - i > binprefixlen
+                } else if (binprefixlen != 0 && lines[at].length - i >= binprefixlen
                     && !uchar32_cmp(&lines[at].data[i], config.current_syntax->number_prefix[2], binprefixlen)) {
-                    numlen += binprefixlen;
+                    prefixlen = binprefixlen;
                     numbers = "01";
                 }
 
-                while ((i + numlen) < lines[at].length && strchr(numbers, lines[at].data[i + numlen]))
-                    numlen++;
+                numlen += prefixlen;
+                while ((i + numlen) < lines[at].length && strchr(numbers, lines[at].data[i + numlen])) numlen++;
 
                 if ((i + numlen) == lines[at].length || strchr(config.current_syntax->word_separators, lines[at].data[i + numlen])) {
-                    for (unsigned int j = 0; j < numlen; j++)
+                    if (numlen - prefixlen > 0)
+                        for (unsigned int j = 0; j < prefixlen; j++)
+                            lines[at].color[i + j] = config.current_syntax->number_prefix_color;
+
+                    for (unsigned int j = numlen - prefixlen > 0 ? prefixlen : 0; j < numlen; j++)
                         if (!lines[at].color[i + j])
                             lines[at].color[i + j] = config.current_syntax->number_color;
                     i += numlen;
