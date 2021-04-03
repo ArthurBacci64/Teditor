@@ -13,7 +13,7 @@ void savefile(void) {
 
     if (config.insert_newline && lines[num_lines - 1].length > 0) {
         lines = realloc(lines, ++num_lines * sizeof(*lines));
-        lines[num_lines - 1] = blank_line();
+        blank_line(&lines[num_lines - 1]);
     }
 
     for (unsigned int i = 0; i < num_lines; i++) {
@@ -41,7 +41,7 @@ void read_lines(void) {
         num_lines = 1;
         lines = malloc(num_lines * sizeof(*lines));
 
-        lines[0] = blank_line();
+        blank_line(&lines[0]);
         return;
     }
 
@@ -57,8 +57,7 @@ void read_lines(void) {
             fseek(fp, -1, SEEK_CUR);
 
         lines = realloc(lines, ++num_lines * sizeof(*lines));
-
-        lines[i] = blank_line();
+        blank_line(&lines[i]);
 
         char c;
         unsigned int j;

@@ -99,17 +99,12 @@ int uchar32_sub(const uchar32_t *hs, const char *sub, unsigned int hslen, unsign
     return -1; //No substring found
 }
 
-struct LINE blank_line(void) {
-    struct LINE ln;
-
-    ln.len = READ_BLOCKSIZE;
-    ln.data = malloc(ln.len * sizeof(*ln.data));
-    ln.color = malloc(ln.len * sizeof(*ln.color));
-    ln.length = 0;
-    ln.ident = 0;
-    ln.multiline_comment = 0;
-
-    *ln.data = '\0';
-
-    return ln;
+void blank_line(struct LINE *ln) {
+    ln->len = READ_BLOCKSIZE;
+    ln->data = malloc(ln->len * sizeof(*ln->data));
+    ln->color = malloc(ln->len * sizeof(*ln->color));
+    ln->length = 0;
+    ln->ident = 0;
+    ln->multiline_comment = 0;
+    *ln->data = '\0';
 }

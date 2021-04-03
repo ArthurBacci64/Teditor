@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include<sys/wait.h>
 #include <errno.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -91,7 +92,9 @@ void calculate_len_line_number(void);
 int uchar32_cmp(const uchar32_t *s1, const char *s2, unsigned int stringlen);
 int uchar32_casecmp(const uchar32_t *s1, const char *s2, unsigned int stringlen);
 int uchar32_sub(const uchar32_t *hs, const char *sub, unsigned int hslen, unsigned int sublen);
-struct LINE blank_line(void);
+
+struct LINE;//forward declaration
+void blank_line(struct LINE *ln);
 
 // extension.c
 bool detect_extension(char *fname);
@@ -100,6 +103,13 @@ bool detect_extension(char *fname);
 bool modify(void);
 bool add_char(int x, int y, uchar32_t c);
 bool remove_char(int x, int y);
+
+// git.c
+void git_setup(void);
+void git_update_info(char *fname);
+bool git_in_repo(char *path);
+bool git_current_branch(char *buf, unsigned int buflen);
+bool git_tracked(char *fname);
 
 struct KWD {
     const char *string;
@@ -118,7 +128,6 @@ Syntax Highlighting Descriptor
 */
 struct SHD {
     const char *name;
-    bool limited_scroll; // if set syntaxHighlight won't scroll over all the source
     unsigned int exts_len;
     const char **extensions;
     const char *word_separators;
@@ -146,10 +155,14 @@ struct BUFFER {
     bool modified;
     bool read_only;
     bool can_write;
+    bool git_tracked;
+    bool git_in_repo;
+    char *git_branch;
 };
 
 struct CFG {
     bool strict_utf8; // high/low surrogates will be replaced (for now leave it always set)
+    bool git_installed;
     unsigned int tablen;
     int lines;
     unsigned char line_break_type; // 0: LF  1: CRLF  2: CR

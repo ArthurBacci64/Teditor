@@ -133,8 +133,10 @@ void process_keypress(int c) {
     } case ctrl('o'):
     {
         char *d = prompt("open: ", filename);
-        if (d)
+        if (d) {
             openFile(d, 1);
+            git_update_info(d);
+        }
         break;
     } case CTRL_KEY_LEFT:
     {

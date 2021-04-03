@@ -1,8 +1,8 @@
 #include "ted.h"
 
 void syntaxHighlight(void) {
-    if (config.current_syntax == &default_syntax) {// just reset color to all visible lines
-        for (unsigned int at = text_scroll.y; (at < text_scroll.y + config.lines) && (at != num_lines); ++at)
+    if (config.current_syntax == &default_syntax) {// just reset color to all lines
+        for (unsigned int at = 0; at < num_lines; at++)
             memset(lines[at].color, 0, (lines[at].length + 1) * sizeof(*lines[at].color));
         return;
     }
