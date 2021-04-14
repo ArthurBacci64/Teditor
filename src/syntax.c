@@ -112,9 +112,9 @@ static struct SHD c_syntax = {
     PALETTE_COLOR(PALETTE_CYAN, PALETTE_OFF), PALETTE_COLOR(PALETTE_OFF, PALETTE_CYAN),
     LITERAL_COLOR, LITERAL_COLOR, TYPES_COLOR,
     "\"\'", sizeof c_cpp_number_strmatch / sizeof *c_cpp_number_strmatch, c_cpp_number_strmatch,// Strings charaters
-    "//", {"/*", "*/"}, // Comments
+    STRMATCH("//"), {STRMATCH("/*"), STRMATCH("*/")}, // Comments
     {"{[(", "}])"},
-    {"0x", "0", ""},
+    {STRMATCH("0x"), STRMATCH("0"), STRMATCH("")},
     c_cpp_number_suffixes,
     {"0123456789aAbBcCdDeEfF", "01234567", "01", "0123456789"}
 };
@@ -243,9 +243,9 @@ static struct SHD cpp_syntax = {
     PALETTE_COLOR(PALETTE_CYAN, PALETTE_OFF), PALETTE_COLOR(PALETTE_OFF, PALETTE_CYAN),
     LITERAL_COLOR, LITERAL_COLOR, TYPES_COLOR,
     "\"\'", sizeof c_cpp_number_strmatch / sizeof *c_cpp_number_strmatch, c_cpp_number_strmatch,// Strings charaters
-    "//", {"/*", "*/"}, // Comments
+    STRMATCH("//"), {STRMATCH("/*"), STRMATCH("*/")}, // Comments
     {"{[(", "}])"},
-    {"0x", "0", "0b"},
+    {STRMATCH("0x"), STRMATCH("0"), STRMATCH("0b")},
     c_cpp_number_suffixes,
     {"0123456789aAbBcCdDeEfF'", "01234567'", "01'", "0123456789'"} // ' is a digit divisor
 };
@@ -356,9 +356,9 @@ static struct SHD python_syntax = {
     PALETTE_COLOR(PALETTE_CYAN, PALETTE_OFF), PALETTE_COLOR(PALETTE_OFF, PALETTE_CYAN),
     LITERAL_COLOR, LITERAL_COLOR, TYPES_COLOR,
     "\"\'`", sizeof python_strmatch / sizeof *python_strmatch, python_strmatch,// Strings charaters
-    "#", {"", ""}, // Comments
+    STRMATCH("#"), {STRMATCH(""), STRMATCH("")}, // Comments
     {"{[(", "}])"},
-    {"0x", "0o", "0b"},
+    {STRMATCH("0x"), STRMATCH("0o"), STRMATCH("0b")},
     "jJ",
     {"0123456789aAbBcCdDeEfF_", "01234567_", "01_", "0123456789_"} // _ is a digit divisor
 };
@@ -421,9 +421,9 @@ static struct SHD sh_syntax = {
     PALETTE_COLOR(PALETTE_CYAN, PALETTE_OFF), PALETTE_COLOR(PALETTE_OFF, PALETTE_CYAN),
     LITERAL_COLOR, 0, 0,
     "\"\'`", sizeof sh_strmatch / sizeof *sh_strmatch, sh_strmatch, // Strings charaters
-    "#", {"", ""}, // Comments
+    STRMATCH("#"), {STRMATCH(""), STRMATCH("")}, // Comments
     {"{[(", "}])"},
-    {"", "", ""},
+    {STRMATCH(""), STRMATCH(""), STRMATCH("")},
     "",
     {"0123456789aAbBcCdDeEfF", "01234567", "01", "0123456789"}
 };
@@ -522,9 +522,9 @@ static struct SHD rust_syntax = {
     PALETTE_COLOR(PALETTE_CYAN, PALETTE_OFF), PALETTE_COLOR(PALETTE_OFF, PALETTE_CYAN),
     LITERAL_COLOR, LITERAL_COLOR, TYPES_COLOR,
     "\"", sizeof rust_strmatch / sizeof *rust_strmatch, rust_strmatch,// Strings charaters
-    "//", {"/*", "*/"}, // Comments
+    STRMATCH("//"), {STRMATCH("/*"), STRMATCH("*/")}, // Comments
     {"{[(", "}])"},
-    {"0x", "0o", "0b"},
+    {STRMATCH("0x"), STRMATCH("0o"), STRMATCH("0b")},
     "uif816324sze",
     {"0123456789aAbBcCdDeEfF_", "01234567_", "01_", "0123456789_"} // _ is a digit divisor
 };
@@ -540,9 +540,9 @@ struct SHD default_syntax = {
     0, NULL,
     0, 0, 0, 0, 0, 0, 0,
     "", 0, NULL,
-    "", {"", ""},
+    STRMATCH(""), {STRMATCH(""), STRMATCH("")},
     {"", ""},
-    {"", "", ""},
+    {STRMATCH(""), STRMATCH(""), STRMATCH("")},
     "",
     {"", "", "", ""}
 };

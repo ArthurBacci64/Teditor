@@ -142,10 +142,10 @@ struct SHD {
     const char *stringchars;
     unsigned int stringmatch_len;
     const struct MATCH *stringmatch;
-    const char *singleline_comment;
-    const char *multiline_comment[2];
+    const struct MATCH singleline_comment;
+    const struct MATCH multiline_comment[2];
     const char *match[2];
-    const char *number_prefix[3]; // 0: hexadecimal 1: octal 2: binary
+    const struct MATCH number_prefix[3]; // 0: hexadecimal 1: octal 2: binary
     const char *number_suffixes;
     const char *number_strings[4]; // 0: hexadecimal 1: octal 2: binary 3: decimal
 };
@@ -156,16 +156,10 @@ struct SHSTATE {
     bool backslash;
     char string;
     unsigned int waiting_to_close;
-    unsigned int slinecommentlen;
-    unsigned int mlinecommentstart;
-    unsigned int mlinecommentend;
-    unsigned int hexprefixlen;
-    unsigned int octprefixlen;
-    unsigned int binprefixlen;
     unsigned int at_line;
 };
 
-void init_syntax_state(struct SHSTATE *state, struct SHD *syntax);
+void init_syntax_state(struct SHSTATE *state);
 
 struct BUFFER {
     bool modified;

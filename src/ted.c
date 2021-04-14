@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
     detect_read_only(filename);
 
     signal(SIGALRM, sighandler);
-    init_syntax_state(&config.selected_buf.syntax_state, config.current_syntax);
+    init_syntax_state(&config.selected_buf.syntax_state);
     bool syntax_todo = syntaxHighlight() == SYNTAX_TODO;
 
     while (1) {
@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
             if (syntax_change) { // reset syntax state before calling syntaxHighlight
                 syntax_change = 0;
                 syntax_yield = 0;
-                init_syntax_state(&config.selected_buf.syntax_state, config.current_syntax);
+                init_syntax_state(&config.selected_buf.syntax_state);
             }
             syntax_todo = syntaxHighlight() == SYNTAX_TODO;
         }

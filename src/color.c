@@ -1,20 +1,18 @@
 #include "ted.h"
 
-void init_syntax_state(struct SHSTATE *state, struct SHD *syntax) {
+void init_syntax_state(struct SHSTATE *state) {
     state->multi_line_comment = 0;
     state->backslash = 0;
     state->string = '\0';
     state->waiting_to_close = 0;
-    state->slinecommentlen = strlen(syntax->singleline_comment);
-    state->mlinecommentstart = strlen(syntax->multiline_comment[0]);
-    state->mlinecommentend = strlen(syntax->multiline_comment[1]);
-    state->hexprefixlen = strlen(syntax->number_prefix[0]);
-    state->octprefixlen = strlen(syntax->number_prefix[1]);
-    state->binprefixlen = strlen(syntax->number_prefix[2]);
     state->at_line = 0;
 }
 
 int syntaxHighlight(void) {
+    struct itimerval interval = {0}, zeroed = {0};// set preemptive timer
+    interval.it_value.tv_usec = SYNTAX_TIMEOUT;
+    setitimer(ITIMER_REAL, &interval, NULL);
+
     if (config.current_syntax == &default_syntax) {// just reset color to all lines
         for (unsigned int at = config.selected_buf.syntax_state.at_line; at < num_lines; at++) {
             if (syntax_yield) {
@@ -26,20 +24,17 @@ int syntaxHighlight(void) {
         }
         goto END;
     }
+    //todo: these are superfluous
     bool multi_line_comment = config.selected_buf.syntax_state.multi_line_comment;
     bool backslash = config.selected_buf.syntax_state.backslash;
     char string = config.selected_buf.syntax_state.string;
     unsigned int waiting_to_close = config.selected_buf.syntax_state.waiting_to_close;
-    unsigned int slinecommentlen = config.selected_buf.syntax_state.slinecommentlen;
-    unsigned int mlinecommentstart = config.selected_buf.syntax_state.mlinecommentstart;
-    unsigned int mlinecommentend = config.selected_buf.syntax_state.mlinecommentend;
-    unsigned int hexprefixlen = config.selected_buf.syntax_state.hexprefixlen;
-    unsigned int octprefixlen = config.selected_buf.syntax_state.octprefixlen;
-    unsigned int binprefixlen = config.selected_buf.syntax_state.binprefixlen;
-
-    struct itimerval interval = {0}, zeroed = {0};// set preemptive timer
-    interval.it_value.tv_usec = SYNTAX_TIMEOUT;
-    setitimer(ITIMER_REAL, &interval, NULL);
+    unsigned int slinecommentlen = config.current_syntax->singleline_comment.length; 
+    unsigned int mlinecommentstart = config.current_syntax->multiline_comment[0].length;
+    unsigned int mlinecommentend = config.current_syntax->multiline_comment[1].length;
+    unsigned int hexprefixlen = config.current_syntax->number_prefix[0].length;
+    unsigned int octprefixlen = config.current_syntax->number_prefix[1].length;
+    unsigned int binprefixlen = config.current_syntax->number_prefix[2].length;
 
     for (unsigned int at = config.selected_buf.syntax_state.at_line; at < num_lines; at++) {
         if (syntax_yield) {//save state
@@ -47,12 +42,6 @@ int syntaxHighlight(void) {
             config.selected_buf.syntax_state.backslash = backslash;
             config.selected_buf.syntax_state.string = string;
             config.selected_buf.syntax_state.waiting_to_close = waiting_to_close;
-            config.selected_buf.syntax_state.slinecommentlen = slinecommentlen;
-            config.selected_buf.syntax_state.mlinecommentstart = mlinecommentstart;
-            config.selected_buf.syntax_state.mlinecommentend = mlinecommentend;
-            config.selected_buf.syntax_state.hexprefixlen = hexprefixlen;
-            config.selected_buf.syntax_state.octprefixlen = octprefixlen;
-            config.selected_buf.syntax_state.binprefixlen = binprefixlen;
             config.selected_buf.syntax_state.at_line = at;
             syntax_yield = 0;
             return SYNTAX_TODO;
@@ -108,16 +97,16 @@ int syntaxHighlight(void) {
                 
             if (slinecommentlen != 0 &&
                 lines[at].length >= slinecommentlen && i <= lines[at].length - slinecommentlen &&
-                memcmp(&datachar[i], config.current_syntax->singleline_comment, slinecommentlen) == 0)
+                memcmp(&datachar[i], config.current_syntax->singleline_comment.name, slinecommentlen) == 0)
                 comment = 1;
 
             else if (mlinecommentstart != 0
                      && lines[at].length >= slinecommentlen && i <= lines[at].length - mlinecommentstart
-                     && memcmp(&datachar[i], config.current_syntax->multiline_comment[0], mlinecommentstart) == 0)
+                     && memcmp(&datachar[i], config.current_syntax->multiline_comment[0].name, mlinecommentstart) == 0)
                 multi_line_comment = 1;
 
             else if (mlinecommentend != 0 && i >= mlinecommentend
-                     && memcmp(&datachar[i - mlinecommentend], config.current_syntax->multiline_comment[1], mlinecommentend) == 0)
+                     && memcmp(&datachar[i - mlinecommentend], config.current_syntax->multiline_comment[1].name, mlinecommentend) == 0)
                 multi_line_comment = 0;
                 
             free(datachar);
@@ -166,22 +155,22 @@ int syntaxHighlight(void) {
                 const char *numbers = config.current_syntax->number_strings[3];
 
                 if (hexprefixlen != 0 && lines[at].length - i >= hexprefixlen
-                    && !uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[0], hexprefixlen)
+                    && !uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[0].name, hexprefixlen)
                     && ((hexprefixlen >= octprefixlen && hexprefixlen >= binprefixlen)
-                        || (uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[1], octprefixlen)
-                            && uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[2], binprefixlen)))) {
+                        || (uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[1].name, octprefixlen)
+                            && uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[2].name, binprefixlen)))) {
                     prefixlen = hexprefixlen;
                     numbers = config.current_syntax->number_strings[0];
 
                 } else if (octprefixlen != 0 && lines[at].length - i >= octprefixlen
-                           && !uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[1], octprefixlen)
+                           && !uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[1].name, octprefixlen)
                            && ((octprefixlen >= binprefixlen)
-                               || uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[2], binprefixlen))) {
+                               || uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[2].name, binprefixlen))) {
                     prefixlen = octprefixlen;
                     numbers = config.current_syntax->number_strings[1];
 
                 } else if (binprefixlen != 0 && lines[at].length - i >= binprefixlen
-                           && !uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[2], binprefixlen)) {
+                           && !uchar32_casecmp(&lines[at].data[i], config.current_syntax->number_prefix[2].name, binprefixlen)) {
                     prefixlen = binprefixlen;
                     numbers = config.current_syntax->number_strings[2];
                 }
